@@ -1,0 +1,30 @@
+FROM arm32v7/ubuntu
+
+LABEL maintainer="mrlesmithjr@gmail.com"
+
+ENV PROMETHEUS_VERSION=2.12.0
+
+RUN adduser --no-create-home --disabled-password --shell /bin/false --gecos "Prometheus" prometheus && \
+  adduser --no-create-home --disabled-password --shell /bin/false --gecos "Node Exporter" node_exporter && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends curl unzip ca-certificates && \
+  curl -k -sSLO https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-armv7.tar.gz && \
+  tar -xvzf prometheus-${PROMETHEUS_VERSION}.linux-armv7.tar.gz && \
+  mkdir -p /etc/prometheus /var/lib/prometheus && \
+  cp prometheus-${PROMETHEUS_VERSION}.linux-armv7/promtool /usr/local/bin/ && \
+  cp prometheus-${PROMETHEUS_VERSION}.linux-armv7/prometheus /usr/local/bin/ && \
+  cp -R prometheus-${PROMETHEUS_VERSION}.linux-armv7/console_libraries/ /etc/prometheus/ && \
+  cp -R prometheus-${PROMETHEUS_VERSION}.linux-armv7/consoles/ /etc/prometheus/ && \
+  rm -rf prometheus-${PROMETHEUS_VERSION}.linux-armv7* && \
+  chown prometheus:prometheus /usr/local/bin/prometheus && \
+  chown prometheus:prometheus /usr/local/bin/promtool && \
+  chown -R prometheus:prometheus /etc/prometheus && \
+  chown prometheus:prometheus /var/lib/prometheus
+
+COPY conf/prometheus.yml /etc/prometheus/prometheus.yml
+
+VOLUME ["/etc/prometheus", "/var/lib/prometheus" ]
+
+CMD ["/usr/local/bin/prometheus", "--config.file", "/etc/prometheus/prometheus.yml", "--storage.tsdb.path", "/var/lib/prometheus/", "--web.console.libraries", "/usr/share/prometheus/console_libraries", "--web.console.templates", "/usr/share/prometheus/consoles"]
+
+EXPOSE 9090
