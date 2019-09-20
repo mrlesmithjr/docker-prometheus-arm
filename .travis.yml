@@ -1,0 +1,31 @@
+sudo: true
+dist: xenial
+language: minimal
+services:
+  - docker
+addons:
+  apt:
+    packages:
+      - docker-ce
+before_install:
+  - sudo docker run --privileged linuxkit/binfmt:v0.6
+  - sudo docker run -d --privileged -p 1234:1234 --name buildkit moby/buildkit:latest
+    --addr tcp://0.0.0.0:1234 --oci-worker-platform linux/amd64 --oci-worker-platform
+    linux/armhf --oci-worker-platform linux/arm64
+  - sudo docker cp buildkit:/usr/bin/buildctl /usr/bin/
+  - export BUILDKIT_HOST=tcp://0.0.0.0:1234
+script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -f Dockerfile-alpine -t mrlesmithjr/prometheus-arm:alpine .
+  - docker build -f Dockerfile-debian -t mrlesmithjr/prometheus-arm:debian .
+  - docker build -f Dockerfile-ubuntu -t mrlesmithjr/prometheus-arm:ubuntu .
+  - docker push mrlesmithjr/prometheus-arm:alpine
+  - docker push mrlesmithjr/prometheus-arm:debian
+  - docker push mrlesmithjr/prometheus-arm:ubuntu
+  - export DOCKER_CLI_EXPERIMENTAL=enabled
+  - docker manifest create mrlesmithjr/prometheus-arm mrlesmithjr/prometheus-arm:alpine mrlesmithjr/prometheus-arm:ubuntu mrlesmithjr/prometheus-arm:debian
+  - docker manifest push mrlesmithjr/prometheus-arm
+env:
+  global:
+    - secure: SueqfJNQjPSOoXu1w8rUqNDDwKHE0vg5OU9CL+TscsPU+YzxyqDLfJdbqJdWoxy9o73LyR12L3uw6B/wM6vWIf811X7mQRRsP9Tnyzb4aNk5+Z+fY5jLJ4huKbC4QRkctmjB2WHanQO5kqn3A7gOpvF/XH35+GVRmNPYbiCFW8sfeKhGwEqNndpGfx4VdWF7CdHFj0eI+1aSsEmWJglNim8MaNLFLV8WDP+e5iPd94bhq7PCbEYmcngccn5KAfwSDcViFOxKRkX11SNf+LwFtFXFWXCYurw2VzcsonjyXZKrR6PDSbEMQYJzXZDK1tKPNvBS2fnjD/8j+xH/+BAgNsA+RC+77kVft131wxn6QCzfelIV0aSzJ98KFzNxzEHyscOu8FzXJPc19vc+XbgvNBa1S1mYF1q24/aLwQQ7yCeqF+tEFOuoXXdc0hQAbV0vSyHd56sICVx4BndXdGFDWnyX2pIwQllNmcM38T4oFujcrM5AjYzGhicYRRH4dHhzljZU9gb8nr+Iqthe3XjiECG1lJAjHwGxbu1h7rLVmOLXP0CZDZoV+/eK2A675QSOoyBQxK0XzHLZaWxJfqirScUVSOgp0Xgw+jHPTtLjzHf7qoeO7HjFzIh0P0KiqSln0xM8wdLnBgh0B0827CIvS6hl3GfRqsPUpiM+m9mXlok=
+    - secure: KCMEB7DoosRgc2WfEp5fDxxXIOk2x3hgf75dONh07qv2g6MIoAZKTaNQndENKqn6iEIVMHG3ltDPu3OnhaQfIF88/E9lJaHjG90AZFE/agiLNTzozanN1fw5kHjZG1vtqPezCIfwo0TM9E84fqEINwFlJkmlGuHMUT9DwK44BNmv51TZ7VkFgSWUH1sbewZ6oQ8823HVgw2xzCzPKC9A/ZDbQ5yccpquuOTgqOPAnRZ6np9GBQL2+xxCj0GzaZvNlVrjo1Nng6O+GTg6AXr02BiZrSAIjFyszR19EWfTuCU0pujc6Wo5KztOPQfwoxi0cnE+YuQx6eGQJhMpJwiWc79DRytMHoXp2sb/I5JXoJXLhi1zBqrrD7VeJJIWavg0EvgsZlyfDoh47sr/3Ck6aq+mnnESHH5W7wqlV2Ye5lIoVkUREpqTmscnr3QZ4oCH/8XWbNOmvjHr+n6Avtjok2+weXalJNbiWmKR6S2MNPSEbsHZCzf9fUoIjxTUQaUhqpJ1wpdl2CvySzsVZ80ZbGRT7tHHflZYeegtxOBaZPviHuDaAquGFbXriudEpWH8I783xnzkjkrNJHZRWbG0dGWJHlwJa6eua3gWE3QVFn3GYbqjcdoQ3A2rfutmAPh6CcUmVg+XhgtFBEGsmO/C6ucjV+ThH9/q6qdpeNgaxRQ=
